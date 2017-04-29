@@ -2,10 +2,17 @@
 
 namespace App;
 
+use Exception;
+use ArrayAccess;
+use ArrayIterator;
+use JsonSerializable;
+use IteratorAggregate;
 use BadMethodCallException;
 
-class Magic
+class Magic implements ArrayAccess, IteratorAggregate, JsonSerializable
 {
+    public $cloner = false;
+
     protected $attributes;
 
     public function __construct($attributes = [])
@@ -57,5 +64,47 @@ class Magic
     public static function __callStatic($method, $args)
     {
         throw new BadMethodCallException('Hello Magic!');
+    }
+
+    public function __sleep()
+    {
+        $className = static::class;
+
+        throw new Exception("Serialization of '{$className}' is not allowed");
+    }
+
+    public function __clone()
+    {
+        $this->cloner = true;
+    }
+
+    public function offsetGet($key)
+    {
+        return $this->__get($key);
+    }
+
+    public function offsetSet($key, $value)
+    {
+        $this->__set($key, $value);
+    }
+
+    public function offsetUnset($key)
+    {
+        $this->__unset($key);
+    }
+
+    public function offsetExists($key)
+    {
+        return $this->__isset($key);
+    }
+
+    public function getIterator()
+    {
+        return new ArrayIterator($this->getAttributes());
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->getAttributes();
     }
 }

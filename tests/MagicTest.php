@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Magic;
+use Exception;
 use BadMethodCallException;
 use PHPUnit\Framework\TestCase;
 
@@ -101,5 +102,78 @@ class UnitTest extends TestCase
         $this->expectExceptionMessage('Hello Magic!');
 
         Magic::undefinedMethod();
+    }
+
+    // __sleep
+    // __wakeup
+    public function testSleep()
+    {
+        $magic = new Magic;
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("Serialization of 'App\\Magic' is not allowed");
+
+        serialize($magic);
+    }
+
+    // __clone
+    public function testClone()
+    {
+        $magic = new Magic;
+        $cloner = clone $magic;
+
+        $this->assertTrue($cloner->cloner);
+    }
+
+    // ArrayAccess
+    public function testOffsetGet()
+    {
+        $magic = new Magic(['foo' => 'bar']);
+
+        $this->assertEquals('bar', $magic['foo']);
+    }
+
+    public function testOffsetSet()
+    {
+        $magic = new Magic;
+
+        $magic['foo'] = 'bar';
+
+        $this->assertEquals('bar', $magic['foo']);
+    }
+
+    public function testOffsetUnset()
+    {
+        $magic = new Magic(['foo' => 'bar']);
+
+        unset($magic['foo']);
+
+        $this->assertNull($magic['foo']);
+    }
+
+    public function testOffsetExists()
+    {
+        $magic = new Magic(['foo' => 'bar']);
+
+        $this->assertTrue(isset($magic['foo']));
+        $this->assertFalse(empty($magic['foo']));
+    }
+
+    // IteratorAggregate
+    public function testIterate()
+    {
+        $magic = new Magic($attrs = ['foo' => 'bar']);
+
+        foreach ($magic as $key => $value) {
+            $this->assertEquals($attrs[$key], $value);
+        }
+    }
+
+    // JsonSerializable
+    public function testJsonSerialize()
+    {
+        $magic = new Magic($attrs = ['foo' => 'bar']);
+
+        $this->assertEquals(json_encode($attrs), json_encode($magic));
     }
 }
