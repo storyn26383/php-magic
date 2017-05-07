@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Closure;
 use Exception;
 use ArrayAccess;
 use ArrayIterator;
@@ -11,6 +12,8 @@ use BadMethodCallException;
 
 class Magic implements ArrayAccess, IteratorAggregate, JsonSerializable
 {
+    protected static $macros = [];
+
     public $cloner = false;
 
     protected $attributes;
@@ -56,6 +59,10 @@ class Magic implements ArrayAccess, IteratorAggregate, JsonSerializable
             return $this->attributes[lcfirst($matches[1])];
         }
 
+        if (isset(static::$macros[$method])) {
+            return call_user_func_array(static::$macros[$method]->bindTo($this, static::class), $args);
+        }
+
         $className = static::class;
 
         throw new BadMethodCallException("Call to undefined method {$className}::{$method}()");
@@ -63,7 +70,13 @@ class Magic implements ArrayAccess, IteratorAggregate, JsonSerializable
 
     public static function __callStatic($method, $args)
     {
-        throw new BadMethodCallException('Hello Magic!');
+        if (isset(static::$macros[$method])) {
+            return call_user_func_array(Closure::bind(static::$macros[$method], null, static::class), $args);
+        }
+
+        $className = static::class;
+
+        throw new BadMethodCallException("Call to undefined method {$className}::{$method}()");
     }
 
     public function __sleep()
@@ -106,5 +119,15 @@ class Magic implements ArrayAccess, IteratorAggregate, JsonSerializable
     public function jsonSerialize()
     {
         return $this->getAttributes();
+    }
+
+    public function __invoke()
+    {
+        return $this->getAttributes();
+    }
+
+    public static function macro($name, Closure $macro)
+    {
+        static::$macros[$name] = $macro;
     }
 }

@@ -99,7 +99,7 @@ class UnitTest extends TestCase
     public function testCallStatic()
     {
         $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Hello Magic!');
+        $this->expectExceptionMessage("Call to undefined method App\\Magic::undefinedMethod()");
 
         Magic::undefinedMethod();
     }
@@ -175,5 +175,35 @@ class UnitTest extends TestCase
         $magic = new Magic($attrs = ['foo' => 'bar']);
 
         $this->assertEquals(json_encode($attrs), json_encode($magic));
+    }
+
+    // __invoke
+    public function testGetInvoke()
+    {
+        $magic = new Magic($attrs = ['foo' => 'bar']);
+
+        $this->assertEquals($attrs, $magic());
+    }
+
+    // bindTo
+    public function testBindTo()
+    {
+        $magic = new Magic($attrs = ['foo' => 'bar']);
+
+        $magic->macro('attrs', function () {
+            return $this->getAttributes();
+        });
+
+        $this->assertEquals($magic->getAttributes(), $magic->attrs());
+    }
+
+    // bind
+    public function testBind()
+    {
+        Magic::macro('macros', function () {
+            return array_keys(static::$macros);
+        });
+
+        $this->assertEquals(['attrs', 'macros'], Magic::macros());
     }
 }
